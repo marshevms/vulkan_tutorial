@@ -7,6 +7,9 @@
 
 #include <vector>
 #include <unordered_set>
+#include <map>
+
+#include "queue_family_indices.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -119,6 +122,41 @@ void destroyDebugUtilsMessengerEXT(
     }
 }
 
+int rateDeviceSuitability(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceFeatures deviceFeatures;
+    int score = 0;
+
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+    // Discrete GPUs have a significant performance advantage
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+    {
+        score += 1000;
+    }
+
+    // Maximum possible size of textures affects graphics quality
+    score += deviceProperties.limits.maxImageDimension2D;
+
+    // Application can't function without geometry shaders
+    //m1???
+    //    if (!deviceFeatures.geometryShader)
+    //    {
+    //        return 0;
+    //    }
+
+    return score;
+}
+
+bool isDeviceSuitable(VkPhysicalDevice device)
+{
+    QueueFamilyIndices indices = findQueueFamilies(device);
+
+    return indices.isComplete();
+}
+
 class HelloTriangleApplication
 {
 public:
@@ -156,6 +194,8 @@ private:
 
     VkDebugUtilsMessengerEXT debugMessenger;
 
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+
     void initWindow()
     {
         glfwInit();
@@ -170,10 +210,44 @@ private:
     {
         createInstance();
         setupDebugMessenger();
+        pickPhysicalDevice();
     }
 
     void pickPhysicalDevice()
     {
+        uint32_t deviceCount = 0;
+        std::vector<VkPhysicalDevice> devices;
+
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        if (deviceCount == 0)
+        {
+            throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        }
+
+        devices.resize(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        std::multimap<int, VkPhysicalDevice> candidates;
+
+        for (auto &device : devices)
+        {
+            candidates.insert({rateDeviceSuitability(device), device});
+        }
+
+        // Check if the best candidate is suitable at all
+        if (candidates.rbegin()->first > 0)
+        {
+            physicalDevice = candidates.rbegin()->second;
+        }
+        else
+        {
+            throw std::runtime_error("failed to find a suitable GPU!");
+        }
+
+        if (physicalDevice == VK_NULL_HANDLE)
+        {
+            throw std::runtime_error("failed to find a suitable GPU!");
+        }
     }
 
     void setupDebugMessenger()
