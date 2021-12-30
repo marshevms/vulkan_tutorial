@@ -1,11 +1,9 @@
 #pragma once
 
 #include <optional>
-
 #include <vulkan/vulkan.h>
 
-struct QueueFamilyIndices
-{
+struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
 
     inline bool isComplete()

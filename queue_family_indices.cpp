@@ -9,20 +9,19 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
     uint32_t queueFamilyCount = 0;
     std::vector<VkQueueFamilyProperties> queueFamilies;
 
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-    if (queueFamilyCount == 0)
-    {
+    vkGetPhysicalDeviceQueueFamilyProperties(
+        device, &queueFamilyCount, nullptr);
+    if (queueFamilyCount == 0) {
         return {};
     }
 
     queueFamilies.resize(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+    vkGetPhysicalDeviceQueueFamilyProperties(
+        device, &queueFamilyCount, queueFamilies.data());
 
     int i = 0;
-    for (const auto &queueFamily : queueFamilies)
-    {
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
+    for (const auto& queueFamily : queueFamilies) {
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
             break;
         }
